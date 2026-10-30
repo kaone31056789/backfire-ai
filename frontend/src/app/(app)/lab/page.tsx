@@ -82,6 +82,7 @@ export default function InterventionLab() {
   const [chosen, setChosen] = useState<string | null>(null);
   const [idea, setIdea] = useState("");
   const [drafting, setDrafting] = useState(false);
+  const [launching, setLaunching] = useState(false);
   const [draftInfo, setDraftInfo] = useState<{ mode: string; model: string; note: string | null } | null>(null);
   const [preview, setPreview] = useState<Film | null>(null);
   const [previewing, setPreviewing] = useState(false);
@@ -145,6 +146,9 @@ export default function InterventionLab() {
       const d = await api<{ idea: string; invented: boolean; title: string; location_name: string; country: string; latitude: number | null; longitude: number | null; description: string; objectives: { metric: MetricKey; operator: ">=" | "<="; threshold: number }[]; parameter_hints: Record<string, number>; mode: string; model: string; note: string | null }>("/scenario/draft", { body: { description: description.length >= 10 ? description : "" } });
       if (d.invented) await typeInto(d.idea);
       setChosen("ai");
+      const objs: Obj[] = d.objectives.map((o) => ({ metric: o.metric, operator: o.operator, threshold: String(o.threshold) }));
+      const hinted: ParamState = { ...params };
+      Object.entries(d.parameter_hints || {}).forEach(([k, v]) => { if (hinted[k]) hinted[k] = { ...hinted[k], nominal: Math.min(hinted[k].upper, Math.max(hinted[k].lower, v)) }; });
       setTitle(d.title);
       setDescription(d.description);
       if (d.latitude !== null && d.longitude !== null) setSite({ name: d.location_name, country: d.country, lat: String(d.latitude), lon: String(d.longitude) });
@@ -155,8 +159,14 @@ export default function InterventionLab() {
         return next;
       });
       setDraftInfo({ mode: d.mode, model: d.model, note: d.note });
-      if (d.latitude !== null && d.longitude !== null)
+      if (d.latitude !== null && d.longitude !== null && Math.abs(d.latitude) <= 66 && reg.data) {
+        setLaunching(true);
+        await submit({ title: d.title, description: d.description, site: { name: d.location_name, country: d.country, lat: d.latitude, lon: d.longitude }, objectives: objs, params: hinted, then: "film" });
+      } else if (d.latitude !== null && d.longitude !== null) {
         loadPreview({ title: d.title, name: d.location_name, lat: d.latitude, lon: d.longitude, objectives: d.objectives, hints: d.parameter_hints });
+      } else {
+        setError(new Error("The AI couldn't place this idea on the map. Click the globe to pick the site, then press Run the simulation."));
+      }
     } catch (e) {
       setError(e);
     } finally {
@@ -227,35 +237,37 @@ export default function InterventionLab() {
     }
   }
 
-  async function submit() {
+  async function submit(o?: { title: string; description: string; site: { name: string; country: string; lat: number; lon: number }; objectives: Obj[]; params: ParamState; then?: string }) {
     setSubmitting(true);
     setError(null);
+    const T = o?.title ?? title, D = o?.description ?? description, P = o?.params ?? params, OB = o?.objectives ?? objectives;
+    const S = o ? o.site : { name: site.name, country: site.country, lat, lon };
     try {
       const reged = reg.data!.parameters;
       const changed: Record<string, Partial<{ nominal: number; lower: number; upper: number; active: boolean }>> = {};
       reged.forEach((r) => {
-        const v = params[r.name];
+        const v = P[r.name];
         if (!v) return;
         if (v.nominal !== r.nominal || v.lower !== r.lower || v.upper !== r.upper || !v.active) changed[r.name] = v;
       });
       const inv = await api<Investigation>("/investigations", {
         body: {
-          title: title.trim(),
-          description: (description.trim() || `Intervention described in uploaded document ${upload?.filename}.`).padEnd(20, "."),
-          location_name: site.name.trim(),
-          country: site.country.trim(),
-          latitude: lat,
-          longitude: lon,
-          objectives: objectives.map((o) => ({ metric: o.metric, operator: o.operator, threshold: Number(o.threshold), label: `${METRICS.find((m) => m.value === o.metric)?.label} ${o.operator} ${o.threshold}` })),
+          title: T.trim(),
+          description: (D.trim() || `Intervention described in uploaded document ${upload?.filename}.`).padEnd(20, "."),
+          location_name: S.name.trim(),
+          country: S.country.trim(),
+          latitude: S.lat,
+          longitude: S.lon,
+          objectives: OB.map((o) => ({ metric: o.metric, operator: o.operator, threshold: Number(o.threshold), label: `${METRICS.find((m) => m.value === o.metric)?.label} ${o.operator} ${o.threshold}` })),
           parameters: changed,
           settings: { budget: settings.budget, lambda: settings.lambda, methods: settings.methods, horizon_years: settings.horizon_years, cooling_response: settings.cooling_response, include_intervention_params: settings.include_intervention_params },
           seed: settings.seed,
           upload_id: upload?.upload_id,
         },
       });
-      if (autostart) {
+      if (autostart || o) {
         await api(`/investigations/${inv.id}/run-backfire`, { method: "POST" });
-        router.push(`/investigations/${inv.id}/engine`);
+        router.push(`/investigations/${inv.id}/engine${o?.then ? `?then=${o.then}` : ""}`);
       } else router.push(`/investigations/${inv.id}/overview`);
     } catch (e) {
       setError(e);
@@ -302,9 +314,9 @@ export default function InterventionLab() {
               className="mt-2 w-full resize-none rounded-xl border border-white/10 bg-black/30 p-3 text-[14px] text-white placeholder:text-white/35 focus:border-[#a78bfa]/60 focus:outline-none" />
             <div className="mt-2 grid grid-cols-2 gap-2">
               <Button variant="ghost" className="border border-white/10" onClick={typeDemoIdea} disabled={typing || drafting}><Sparkles className="h-4 w-4" /> {typing ? "Typing…" : "Demo idea"}</Button>
-              <Button variant="outline" className="border-[#a78bfa]/60 bg-[#a78bfa]/15 text-white hover:bg-[#a78bfa]/25" onClick={() => buildWithAi()} loading={drafting} disabled={typing}><Wand2 className="h-4 w-4" /> {drafting ? "AI is thinking…" : idea.trim().length >= 10 ? "Let AI build it" : "Surprise me (AI)"}</Button>
+              <Button variant="outline" className="border-[#a78bfa]/60 bg-[#a78bfa]/15 text-white hover:bg-[#a78bfa]/25" onClick={() => buildWithAi()} loading={drafting || launching} disabled={typing || launching}><Wand2 className="h-4 w-4" /> {launching ? "Starting the simulation…" : drafting ? "AI is building it…" : idea.trim().length >= 10 ? "Let AI build & run it" : "Surprise me (AI)"}</Button>
             </div>
-            <div className="mt-2 text-[12px] text-white/45">{draftInfo ? (draftInfo.mode === "llm" ? `✨ Built by ${draftInfo.model}` : "Built by the rule-based reader.") + (draftInfo.note ? ` ${draftInfo.note}` : "") : "Type an idea, or leave it empty and the AI invents one for you."}</div>
+            <div className="mt-2 text-[12px] text-white/45">{draftInfo ? (draftInfo.mode === "llm" ? `✨ Built by ${draftInfo.model}` : "Built by the rule-based reader.") + (draftInfo.note ? ` ${draftInfo.note}` : "") : "Type an idea and the AI builds it, runs the full simulation and plays the film. Leave it empty and it invents one."}</div>
           </div>
         </div>
       </div>
@@ -367,7 +379,7 @@ export default function InterventionLab() {
           {issues.length > 0 && <div className="mt-2 pl-12 text-[13px] text-[#f5b84a]">Still needed: {issues.join(" · ")}</div>}
           {error ? <div className="mt-3 pl-12"><ErrorState error={error} compact /></div> : null}
         </div>
-        <Button variant="primary" size="lg" className="h-14 shrink-0 rounded-2xl px-8 text-[16px]" disabled={issues.length > 0 || !reg.data} loading={submitting} onClick={submit}>
+        <Button variant="primary" size="lg" className="h-14 shrink-0 rounded-2xl px-8 text-[16px]" disabled={issues.length > 0 || !reg.data} loading={submitting} onClick={() => submit()}>
           <Rocket className="h-5 w-5" /> Run the simulation
         </Button>
       </div>

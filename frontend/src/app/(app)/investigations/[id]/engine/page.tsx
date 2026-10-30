@@ -1,7 +1,9 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
 import { Activity, AlertTriangle, CheckCircle2, Circle, Crosshair, Loader2, Radar, XCircle } from "lucide-react";
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import { C, EChart, axisBase, tooltipBase } from "@/components/charts/echart";
 import { useInvestigation } from "@/components/investigation-context";
@@ -49,10 +51,31 @@ export default function EnginePage() {
   const totalEvals = (progress?.data?.total_evaluations as number | undefined) ?? 0;
   const failures = current.filter((e) => e.type === "failure_found");
   const running = inv.running || inv.status === "running" || inv.status === "analysing";
+  // started from "Let AI build & run it": open the film automatically once the run is complete
+  const router = useRouter();
+  const thenFilm = useSearchParams().get("then") === "film";
+  const finished = !running && inv.stage === "done";
+  useEffect(() => {
+    if (!thenFilm || !finished) return;
+    const t = setTimeout(() => router.push(`/investigations/${inv.id}/film`), 2800);
+    return () => clearTimeout(t);
+  }, [thenFilm, finished, router, inv.id]);
   const shown = events.filter((e) => (filter === "all" ? true : filter === "findings" ? ["finding", "failure_found"].includes(e.type) : ["error", "warning"].includes(e.type)));
 
   return (
     <div className="space-y-5">
+      {thenFilm && (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className={cn("hud flex flex-wrap items-center gap-4 rounded-2xl p-4", finished && "border-[#3ee6a8]/40")}>
+          <span className={cn("grid h-11 w-11 shrink-0 place-items-center rounded-xl", finished ? "bg-[#3ee6a8]/15" : "bg-[#ff5b2e]/15")}>
+            {finished ? <CheckCircle2 className="h-5 w-5 text-[#3ee6a8]" /> : <Loader2 className="h-5 w-5 animate-spin text-[#ff7a4d]" />}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="text-[16px] font-semibold text-white">{finished ? "Simulation complete — opening the film…" : inv.status === "failed" || inv.stage === "halted" ? "The run stopped early" : "The AI built your scenario. Running the full simulation…"}</div>
+            <div className="text-[13.5px] text-white/55">{finished ? "Ten simulated years, the breaking change and a safer design, in 3D." : "8 agents: evidence, 10-year model, breaking-point search, verification. About a minute; the film opens automatically when it's done."}</div>
+          </div>
+          {finished && <Link href={`/investigations/${inv.id}/film`} className="rounded-full bg-white px-4 py-2 text-[14px] font-semibold text-black">▶ Watch now</Link>}
+        </motion.div>
+      )}
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_340px]">
         <Panel ticks>
           <PanelHeader code="05.1" title="Agent pipeline">
