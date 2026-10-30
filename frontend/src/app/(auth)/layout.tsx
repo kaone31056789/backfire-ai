@@ -1,70 +1,63 @@
+"use client";
+import { motion } from "framer-motion";
 import { Crosshair, Microscope, ShieldCheck } from "lucide-react";
+import dynamic from "next/dynamic";
+import Link from "next/link";
 
+import { Logo } from "@/components/auth-form";
+
+const WorldMap = dynamic(() => import("@/components/world-map").then((m) => m.WorldMap), { ssr: false });
+
+const ease = [0.22, 1, 0.36, 1] as const;
+
+/** Sign-in / register: the same satellite globe, palette and HUD cards as the rest of the site. */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden"><div className="aurora" /></div>
-      <div className="pointer-events-none absolute inset-0 lab-grid" />
-      <div className="relative mx-auto grid min-h-screen max-w-6xl grid-cols-1 items-center gap-14 px-6 py-12 lg:grid-cols-[1.15fr_1fr]">
+    <div className="relative min-h-screen overflow-hidden bg-[#05070c] text-white">
+      {/* the live globe, slowly turning behind everything */}
+      <div className="pointer-events-none absolute inset-0 opacity-70">
+        <WorldMap points={[]} height="100%" interactive={false} autoRotate controls="none" />
+      </div>
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_70%_50%,transparent_0%,rgba(5,7,12,0.55)_45%,#05070c_85%)]" />
+      <div className="pointer-events-none absolute -left-40 top-1/3 h-[520px] w-[520px] rounded-full bg-[#ff5b2e]/10 blur-[120px]" />
+
+      <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-6 pt-7">
+        <Link href="/" className="flex items-center gap-2.5"><Logo size={30} /><span className="text-[16px] font-semibold">BACKFIRE<span className="text-[#ff5b2e]"> AI</span></span></Link>
+        <nav className="flex items-center gap-1 text-[14px] text-white/60">
+          <Link href="/how-it-works" className="rounded-full px-3 py-1.5 hover:text-white">How it works</Link>
+          <Link href="/architecture" className="hidden rounded-full px-3 py-1.5 hover:text-white sm:block">Architecture</Link>
+        </nav>
+      </header>
+
+      <div className="relative z-10 mx-auto grid min-h-[calc(100vh-80px)] max-w-6xl grid-cols-1 items-center gap-14 px-6 py-10 lg:grid-cols-[1.1fr_1fr]">
         <section className="hidden lg:block">
-          <div className="inline-flex items-center gap-2 rounded-full border border-line-2 bg-panel/70 py-1 pl-2 pr-3 text-[13px] text-ink-2 backdrop-blur">
-            <span className="h-1.5 w-1.5 rounded-full bg-holds shadow-[0_0_8px_var(--color-holds)]" /> Adversarial climate intervention falsification
-          </div>
-          <h1 className="mt-6 text-[54px] font-semibold leading-[1.02] tracking-[-0.035em] text-ink">
-            Find the smallest plausible change that <em>breaks a climate promise.</em>
-          </h1>
-          <p className="mt-6 max-w-lg text-[17px] leading-relaxed text-ink-3">
-            Instead of asking whether an intervention will work, BACKFIRE searches documented scientific bounds for the
-            minimum perturbation that falsifies its claimed benefit — then an independent agent tries to reproduce it.
-          </p>
-          <BoundaryIllustration />
-          <ul className="mt-8 grid max-w-lg grid-cols-3 gap-3">
-            {[
-              [Microscope, "Evidence-grounded", "OpenAlex, Crossref, NASA POWER"],
-              [Crosshair, "MPFS search", "benchmarked vs DE & NSGA-II"],
-              [ShieldCheck, "Verified", "independent re-evaluation"],
-            ].map(([Icon, t, s]) => {
-              const I = Icon as typeof Microscope;
-              return (
-                <li key={t as string} className="rounded-[var(--radius-md)] border border-line bg-panel/60 p-3.5 backdrop-blur">
-                  <I className="h-4 w-4 text-holds" />
-                  <div className="mt-2 text-[13.5px] font-medium text-ink">{t as string}</div>
-                  <div className="mt-0.5 text-[12.5px] leading-snug text-ink-4">{s as string}</div>
-                </li>
-              );
-            })}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease }} className="text-[13px] font-medium uppercase tracking-[0.2em] text-[#ff7a4d]">
+            Climate promises, crash-tested
+          </motion.div>
+          <motion.h1 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.08, ease }} className="mt-5 text-[58px] font-semibold leading-[1.02] tracking-[-0.035em]">
+            Every climate promise has a <span className="font-serif font-normal italic text-[#ff5b2e]">breaking point.</span>
+          </motion.h1>
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.25 }} className="mt-6 max-w-lg text-[17px] leading-relaxed text-white/65">
+            BACKFIRE simulates ten years of a city&apos;s real climate and searches thousands of futures for the smallest realistic change that breaks the promise — then an independent agent re-checks it.
+          </motion.p>
+          <ul className="mt-10 grid max-w-xl grid-cols-3 gap-3">
+            {([
+              [Microscope, "Real evidence", "NASA climate, peer-reviewed papers, verified DOIs"],
+              [Crosshair, "Breaking-point search", "MPFS raced against classic methods"],
+              [ShieldCheck, "Independently verified", "every result re-computed from scratch"],
+            ] as const).map(([Icon, t, s], i) => (
+              <motion.li key={t} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.35 + i * 0.08, ease }} className="hud rounded-2xl p-4">
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#ff5b2e]/12 ring-1 ring-[#ff5b2e]/30"><Icon className="h-4.5 w-4.5 text-[#ff7a4d]" /></span>
+                <div className="mt-3 text-[14px] font-semibold">{t}</div>
+                <div className="mt-1 text-[12.5px] leading-snug text-white/50">{s}</div>
+              </motion.li>
+            ))}
           </ul>
         </section>
-        <section className="w-full max-w-md justify-self-center lg:justify-self-end">{children}</section>
+        <motion.section initial={{ opacity: 0, y: 24, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.7, delay: 0.1, ease }} className="w-full max-w-md justify-self-center lg:justify-self-end">
+          {children}
+        </motion.section>
       </div>
     </div>
-  );
-}
-
-/** Decorative schematic of a success region, its boundary and a minimum-distance counterexample. */
-function BoundaryIllustration() {
-  return (
-    <figure className="mt-9 max-w-lg rounded-[var(--radius-lg)] border border-line bg-panel/50 p-4 backdrop-blur">
-      <svg viewBox="0 0 480 170" className="w-full" aria-hidden>
-        <defs>
-          <linearGradient id="succ" x1="0" x2="1">
-            <stop offset="0" stopColor="#3ee6a8" stopOpacity="0.22" />
-            <stop offset="1" stopColor="#4cc9f0" stopOpacity="0.08" />
-          </linearGradient>
-          <pattern id="dots" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.8" fill="#2a2f3a" /></pattern>
-        </defs>
-        <rect width="480" height="170" fill="url(#dots)" />
-        <path d="M0,170 L0,40 C80,30 140,90 210,70 C290,48 330,120 480,95 L480,170 Z" fill="url(#succ)" />
-        <path d="M0,40 C80,30 140,90 210,70 C290,48 330,120 480,95" fill="none" stroke="#eef1f5" strokeWidth="1.4" strokeDasharray="4 4" opacity="0.7" />
-        <circle cx="150" cy="128" r="5" fill="#0b0d11" stroke="#b4bcc8" strokeWidth="1.5" />
-        <text x="160" y="146" fill="#8590a0" fontSize="11" fontFamily="var(--font-geist)">nominal scenario</text>
-        <line x1="150" y1="128" x2="186" y2="76" stroke="#ff7a8a" strokeWidth="1.6" />
-        <circle cx="186" cy="76" r="5" fill="#ff7a8a" />
-        <text x="196" y="62" fill="#ff7a8a" fontSize="11" fontFamily="var(--font-geist)">minimum plausible failure</text>
-        <text x="16" y="160" fill="#3ee6a8" fontSize="11" fontFamily="var(--font-geist)">claim holds (B ≥ 0)</text>
-        <text x="330" y="40" fill="#8590a0" fontSize="11" fontFamily="var(--font-geist)">claim fails (B &lt; 0)</text>
-      </svg>
-      <figcaption className="mt-2 text-[12px] text-ink-4">Schematic illustration — not data.</figcaption>
-    </figure>
   );
 }

@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { ErrorState, Input, Label, Panel } from "@/components/ui/primitives";
+import { ErrorState } from "@/components/ui/primitives";
 import { api } from "@/lib/api";
 
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
@@ -51,16 +50,18 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     }
   }
 
+  const field = "h-12 w-full rounded-2xl border border-white/10 bg-black/40 px-4 text-[15px] text-white placeholder:text-white/30 transition-colors focus:border-[#ff5b2e]/60 focus:outline-none";
+  const label = "mb-1.5 block text-[13px] font-medium text-white/70";
   return (
     <div className="space-y-4">
       <div className="mb-2 flex items-center gap-3 lg:hidden">
         <Logo size={36} />
-        <div className="text-[17px] font-semibold">BACKFIRE<span className="text-holds"> AI</span></div>
+        <div className="text-[17px] font-semibold">BACKFIRE<span className="text-[#ff5b2e]"> AI</span></div>
       </div>
-      <Panel ticks className="p-7 shadow-2xl shadow-black/40">
+      <div className="hud rounded-[28px] p-7 shadow-2xl shadow-black/50 md:p-8">
         <div className="mb-6">
-          <h2 className="text-[24px] font-semibold tracking-[-0.02em]">{mode === "login" ? "Welcome back" : "Create your lab account"}</h2>
-          <p className="mt-1 text-[14px] text-ink-3">{mode === "login" ? "Sign in to continue your investigations." : "The first account becomes the organisation admin."}</p>
+          <h2 className="text-[26px] font-semibold tracking-[-0.025em] text-white">{mode === "login" ? "Welcome back" : "Create your lab account"}</h2>
+          <p className="mt-1 text-[14.5px] text-white/55">{mode === "login" ? "Sign in to continue your investigations." : "The first account becomes the organisation admin."}</p>
         </div>
         {demo?.enabled && (
           <>
@@ -68,66 +69,55 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
               type="button"
               onClick={demoLogin}
               disabled={!!busy}
-              className="group relative flex w-full items-center gap-3 overflow-hidden rounded-[var(--radius-md)] border border-holds/35 bg-gradient-to-br from-holds/[0.14] to-signal/[0.06] p-4 text-left transition-[border-color,transform] hover:border-holds/60 active:translate-y-px disabled:opacity-60"
+              className="group relative flex w-full items-center gap-3.5 overflow-hidden rounded-2xl border border-[#ff5b2e]/40 bg-gradient-to-br from-[#ff5b2e]/[0.16] to-[#ff5b2e]/[0.04] p-4 text-left transition-[border-color,transform] hover:border-[#ff5b2e]/70 active:translate-y-px disabled:opacity-60"
             >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-holds/20 ring-1 ring-holds/40">
-                {busy === "demo" ? <Loader2 className="h-5 w-5 animate-spin text-holds" /> : <Sparkles className="h-5 w-5 text-holds" />}
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[#ff5b2e] to-[#ff8a5b] shadow-[0_8px_24px_-6px_rgba(255,91,46,0.6)]">
+                {busy === "demo" ? <Loader2 className="h-5 w-5 animate-spin text-white" /> : <Sparkles className="h-5 w-5 text-white" />}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-[15.5px] font-semibold text-ink">Demo login</span>
-                <span className="block truncate text-[13px] text-ink-3">Signs you in automatically as the demo admin</span>
+                <span className="block text-[16px] font-semibold text-white">Demo login</span>
+                <span className="block truncate text-[13px] text-white/55">One click, signs you in as the demo admin</span>
               </span>
-              <ArrowRight className="h-5 w-5 text-holds transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="h-5 w-5 text-[#ff7a4d] transition-transform group-hover:translate-x-1" />
             </button>
-            <div className="my-6 flex items-center gap-3 text-[12.5px] text-ink-4">
-              <span className="h-px flex-1 bg-line" /> or {mode === "login" ? "sign in" : "register"} with email <span className="h-px flex-1 bg-line" />
+            <div className="my-6 flex items-center gap-3 text-[12.5px] text-white/40">
+              <span className="h-px flex-1 bg-white/10" /> or {mode === "login" ? "sign in" : "register"} with email <span className="h-px flex-1 bg-white/10" />
             </div>
           </>
         )}
         <form onSubmit={submit} className="space-y-4" noValidate>
           {mode === "register" && (
             <div className="grid grid-cols-2 gap-3">
-              <div><Label htmlFor="full_name">Name</Label><Input id="full_name" autoComplete="name" value={form.full_name} onChange={set("full_name")} /></div>
-              <div><Label htmlFor="org">Organisation</Label><Input id="org" autoComplete="organization" value={form.organisation} onChange={set("organisation")} /></div>
+              <div><label htmlFor="full_name" className={label}>Name</label><input id="full_name" className={field} autoComplete="name" value={form.full_name} onChange={set("full_name")} /></div>
+              <div><label htmlFor="org" className={label}>Organisation</label><input id="org" className={field} autoComplete="organization" value={form.organisation} onChange={set("organisation")} /></div>
             </div>
           )}
-          <div><Label htmlFor="email">Email</Label><Input id="email" type="email" autoComplete="email" required placeholder="you@institute.org" value={form.email} onChange={set("email")} /></div>
+          <div><label htmlFor="email" className={label}>Email</label><input id="email" className={field} type="email" autoComplete="email" required placeholder="you@institute.org" value={form.email} onChange={set("email")} /></div>
           <div>
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} required value={form.password} onChange={set("password")} />
-            {mode === "register" && <p className="mt-1.5 text-[12.5px] text-ink-4">10+ characters, mixing three of: lowercase, uppercase, digits, symbols.</p>}
+            <label htmlFor="password" className={label}>Password</label>
+            <input id="password" className={field} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} required value={form.password} onChange={set("password")} />
+            {mode === "register" && <p className="mt-1.5 text-[12.5px] text-white/40">10+ characters, mixing three of: lowercase, uppercase, digits, symbols.</p>}
           </div>
           {error ? <ErrorState error={error} compact /> : null}
-          <Button type="submit" variant="primary" size="lg" className="w-full" loading={busy === "form"} disabled={!!busy}>
+          <button type="submit" disabled={!!busy} className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-white text-[15.5px] font-semibold text-black transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60">
+            {busy === "form" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {mode === "login" ? "Sign in" : "Create account"} <ArrowRight className="h-4 w-4" />
-          </Button>
+          </button>
         </form>
-        <div className="mt-6 text-center text-[14px] text-ink-3">
-          {mode === "login" ? <>New here? <Link href="/register" className="font-medium text-holds hover:underline">Create an account</Link></> : <>Already registered? <Link href="/login" className="font-medium text-holds hover:underline">Sign in</Link></>}
+        <div className="mt-6 text-center text-[14px] text-white/55">
+          {mode === "login" ? <>New here? <Link href="/register" className="font-semibold text-[#ff7a4d] hover:underline">Create an account</Link></> : <>Already registered? <Link href="/login" className="font-semibold text-[#ff7a4d] hover:underline">Sign in</Link></>}
         </div>
-      </Panel>
-
+      </div>
     </div>
   );
 }
 
 export function Logo({ size = 34 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 34 34" aria-hidden className="shrink-0">
-      <defs>
-        <linearGradient id="lg-bf" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#1c2029" />
-          <stop offset="1" stopColor="#12151b" />
-        </linearGradient>
-        <linearGradient id="lg-curve" x1="0" x2="1">
-          <stop offset="0" stopColor="#3ee6a8" />
-          <stop offset="1" stopColor="#4cc9f0" />
-        </linearGradient>
-      </defs>
-      <rect x="0.5" y="0.5" width="33" height="33" rx="9" fill="url(#lg-bf)" stroke="#2a2f3a" />
-      <path d="M7 23 C 12 23, 13 11, 17 11 S 22 19, 27 9" fill="none" stroke="url(#lg-curve)" strokeWidth="2" strokeLinecap="round" />
-      <path d="M17 11 L 21.5 24" stroke="#ff7a8a" strokeWidth="1.6" strokeDasharray="2 2" />
-      <circle cx="21.5" cy="24.5" r="2.4" fill="#ff7a8a" />
+    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden className="shrink-0">
+      <rect width="64" height="64" rx="14" fill="#0b0d11" stroke="rgba(255,255,255,0.12)" />
+      <path d="M12 46 L26 30 L34 38 L52 16" fill="none" stroke="#ff5b2e" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="52" cy="16" r="5" fill="#3ee6a8" />
     </svg>
   );
 }
