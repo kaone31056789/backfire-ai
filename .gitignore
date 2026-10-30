@@ -1,0 +1,23 @@
+.env
+*.db
+*.db-wal
+*.db-shm
+__pycache__/
+.pytest_cache/
+backend/.venv/
+backend/uploads/
+frontend/node_modules/
+frontend/.next/
+frontend/test-results/
+frontend/playwright-report/
+*.tsbuildinfo
+
+# large media: recorded films are rebuilt with `npm run record:videos` (see videos/README.md)
+videos/**/*.mp4
+videos/**/*.webm
+videos/archive/
+videos/.raw/
+videos/.stitch/
+*.log
+.DS_Store
+Thumbs.db

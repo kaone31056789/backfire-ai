@@ -1,0 +1,32 @@
+{
+  "09-walkthrough-home-page.mp4": {
+    "dur": 67.6,
+    "mb": 16.3,
+    "what": "The home page in Chrome: the globe dive, “What is BACKFIRE?”, the engine film, the simulation film, the failure landscape and the eight agents with their live results."
+  },
+  "10-walkthrough-demo-login-mission-control.mp4": {
+    "dur": 27.5,
+    "mb": 28.4,
+    "what": "One-click Demo login, the 3D Mission-control globe, selecting a tested city and opening its investigation."
+  },
+  "11-walkthrough-investigation-tabs.mp4": {
+    "dur": 97.9,
+    "mb": 27.4,
+    "what": "The New Delhi investigation tab by tab: overview, the simulation film, claims, the causal-graph story view, the 3D failure boundary, alternatives, evidence and the certificate."
+  },
+  "12-walkthrough-ai-scenario-builder.mp4": {
+    "dur": 64.2,
+    "mb": 31.0,
+    "what": "The Lab: “Surprise me (AI)” lets Ollama invent and type a scenario, the climate-styled preview film plays, then “Run the simulation” starts the eight agents live."
+  },
+  "13-walkthrough-ask-ai-copilot.mp4": {
+    "dur": 67.1,
+    "mb": 58.0,
+    "what": "The AI Copilot answers a question about the investigation using only the computed numbers."
+  },
+  "14-walkthrough-benchmarks-architecture.mp4": {
+    "dur": 60.7,
+    "mb": 9.5,
+    "what": "The Benchmarks page and its 3D race, then the 3D backend architecture map with the guided “follow one investigation” tour."
+  }
+}
