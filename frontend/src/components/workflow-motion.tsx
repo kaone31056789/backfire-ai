@@ -80,7 +80,7 @@ function Label({ step, title, sub, p }: { step: string; title: string; sub: stri
 function Panel({ x, y, w, h, p, delay = 0, children, style }: { x: number; y: number; w: number; h: number; p: number; delay?: number; children: React.ReactNode; style?: React.CSSProperties }) {
   const a = fade(p, delay, 0.1) * out(p);
   return (
-    <div style={{ position: "absolute", left: x, top: y, width: w, height: h, background: C.panel, border: `1px solid ${C.line}`, borderRadius: 18, opacity: a, transform: `translateY(${(1 - fade(p, delay, 0.1)) * 18}px)`, overflow: "hidden", ...style }}>
+    <div style={{ position: "absolute", left: x, top: y, width: w, height: h, willChange: "transform, opacity", background: C.panel, border: `1px solid ${C.line}`, borderRadius: 18, opacity: a, transform: `translateY(${(1 - fade(p, delay, 0.1)) * 18}px)`, overflow: "hidden", ...style }}>
       {children}
     </div>
   );
@@ -341,9 +341,9 @@ function Sensitivity({ p, f }: { p: number; f: Featured }) {
   return (
     <>
       <Label p={p} step="Stage 4 · Sensitivity" title="Find what matters most" sub="Thousands of plausible futures are sampled; Sobol indices measure how much of the result's spread each uncertain input explains." />
-      <svg width={W} height={H} style={{ position: "absolute", inset: 0 }}>
-        {dots.map(([x, y], i) => <circle key={i} cx={x} cy={y} r={2} fill={C.text} opacity={(i / dots.length < seg(p, 0.05, 0.5) ? 0.35 : 0) * out(p)} />)}
-      </svg>
+      <div style={{ position: "absolute", inset: 0, opacity: out(p), clipPath: `inset(0 ${(1 - ease(seg(p, 0.05, 0.5))) * 100}% 0 0)` }}>
+        <Dots dots={dots} />
+      </div>
       <div style={{ position: "absolute", left: 80, top: 250, width: 560 }}>
         {rows.map((r, i) => (
           <div key={r.parameter} style={{ marginBottom: 28, opacity: fade(p, 0.25 + i * 0.1) * out(p) }}>
@@ -359,6 +359,14 @@ function Sensitivity({ p, f }: { p: number; f: Featured }) {
     </>
   );
 }
+
+const Dots = memo(function Dots({ dots }: { dots: number[][] }) {
+  return (
+    <svg width={W} height={H} style={{ position: "absolute", inset: 0 }}>
+      {dots.map(([x, y], i) => <circle key={i} cx={x} cy={y} r={2} fill={C.text} opacity={0.35} />)}
+    </svg>
+  );
+});
 
 const Heatmap = memo(function Heatmap({ L, w, h }: { L: Landscape; w: number; h: number }) {
   const ny = L.z.length, nx = L.z[0].length, cw = w / nx, chh = h / ny;
@@ -534,6 +542,15 @@ function Outro({ p }: { p: number }) {
 }
 
 /* ------------------------------------------------------------------ stage chrome */
+/** Background grid as one CSS gradient (no per-frame DOM). */
+const Grid = memo(function Grid() {
+  return <div style={{ position: "absolute", inset: 0, opacity: 0.35, backgroundImage: "linear-gradient(#0f151e 1px, transparent 1px), linear-gradient(90deg, #0f151e 1px, transparent 1px)", backgroundSize: "40px 40px" }} />;
+});
+
+/** Soft colour glow, moved with GPU transforms only (no layout or repaint per frame). */
+function Glow({ x, y, size, color }: { x: number; y: number; size: number; color: string }) {
+  return <div style={{ position: "absolute", left: 0, top: 0, width: size, height: size, borderRadius: "50%", transform: `translate3d(${x}px, ${y}px, 0)`, willChange: "transform", background: `radial-gradient(circle, ${color}, transparent 60%)`, pointerEvents: "none" }} />;
+}
 function Rail({ t }: { t: number }) {
   const step = (k: number) => clamp((t - STARTS[k + 1]) / SCENES[k + 1].len);
   return (
@@ -563,10 +580,7 @@ function Stage({ facts, t }: { facts: MotionFacts; t: number }) {
   const key = SCENES[i].key;
   return (
     <div style={{ position: "relative", width: W, height: H, background: `radial-gradient(1200px 600px at 70% -10%, #121a26 0%, ${C.bg} 60%)`, overflow: "hidden", fontFamily: "var(--font-geist), system-ui, sans-serif" }}>
-      <svg width={W} height={H} style={{ position: "absolute", inset: 0, opacity: 0.35 }}>
-        {Array.from({ length: 33 }, (_, k) => <line key={`v${k}`} x1={k * 40} y1={0} x2={k * 40} y2={H} stroke="#0f151e" />)}
-        {Array.from({ length: 19 }, (_, k) => <line key={`h${k}`} x1={0} y1={k * 40} x2={W} y2={k * 40} stroke="#0f151e" />)}
-      </svg>
+      <Grid />
       <div style={{ position: "absolute", left: 80, top: 34, display: "flex", alignItems: "center", gap: 10, fontSize: 15, fontWeight: 600, color: C.text }}>
         <svg width={22} height={22} viewBox="0 0 64 64"><path d="M12 46 L26 30 L34 38 L52 16" fill="none" stroke={C.accent} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" /><circle cx={52} cy={16} r={6} fill={C.green} /></svg>
         BACKFIRE <span style={{ color: C.accent }}>AI</span>
@@ -574,10 +588,10 @@ function Stage({ facts, t }: { facts: MotionFacts; t: number }) {
       </div>
       <div style={{ position: "absolute", right: 80, top: 36, fontSize: 13, color: C.mute }}>{f.location}{f.country ? `, ${f.country}` : ""} · <Mono size={13}>{String(Math.floor(t / 60)).padStart(2, "0")}:{String(Math.floor(t % 60)).padStart(2, "0")}</Mono></div>
       {/* drifting glow: slow colour light that travels across the whole film */}
-      <div style={{ position: "absolute", width: 900, height: 900, borderRadius: "50%", left: 200 + Math.sin(t * 0.13) * 380, top: -300 + Math.cos(t * 0.09) * 160, background: "radial-gradient(circle, rgba(255,91,46,.10), transparent 60%)", pointerEvents: "none" }} />
-      <div style={{ position: "absolute", width: 800, height: 800, borderRadius: "50%", left: 500 + Math.cos(t * 0.11) * 420, top: 120 + Math.sin(t * 0.07) * 140, background: "radial-gradient(circle, rgba(62,230,168,.07), transparent 60%)", pointerEvents: "none" }} />
+      <Glow x={200 + Math.sin(t * 0.13) * 380} y={-300 + Math.cos(t * 0.09) * 160} size={900} color="rgba(255,91,46,.10)" />
+      <Glow x={500 + Math.cos(t * 0.11) * 420} y={120 + Math.sin(t * 0.07) * 140} size={800} color="rgba(62,230,168,.07)" />
       {/* slow camera push on every scene */}
-      <div style={{ position: "absolute", inset: 0, transform: `scale(${1 + ease(p) * 0.028}) translateY(${-ease(p) * 6}px)`, transformOrigin: "50% 45%" }}>
+      <div style={{ position: "absolute", inset: 0, transform: `translate3d(0, ${-ease(p) * 6}px, 0) scale(${1 + ease(p) * 0.028})`, transformOrigin: "50% 45%", willChange: "transform" }}>
       {key === "intro" && <Intro p={p} f={f} />}
       {key === "claims" && <Claims p={p} f={f} />}
       {key === "evidence" && <Evidence p={p} f={f} film={film} />}
@@ -590,7 +604,7 @@ function Stage({ facts, t }: { facts: MotionFacts; t: number }) {
       {key === "outro" && <Outro p={p} />}
       </div>
       {/* light sweep at each scene change */}
-      {i > 0 && p < 0.07 && <div style={{ position: "absolute", top: 0, bottom: 0, width: 260, left: -260 + (p / 0.07) * (W + 520), background: "linear-gradient(90deg, transparent, rgba(255,122,77,.16), transparent)", pointerEvents: "none" }} />}
+      {i > 0 && p < 0.07 && <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: 260, transform: `translate3d(${-260 + (p / 0.07) * (W + 520)}px, 0, 0)`, willChange: "transform", background: "linear-gradient(90deg, transparent, rgba(255,122,77,.16), transparent)", pointerEvents: "none" }} />}
       {key !== "intro" && <Rail t={t} />}
     </div>
   );
@@ -631,7 +645,7 @@ export function WorkflowMotion({ facts, record = false, autoPlay = true }: { fac
           (window as unknown as { __filmDone?: boolean }).__filmDone = true; // recording hook
         }
       }
-      setT(clock.current);
+      setT((prev) => (prev === clock.current ? prev : clock.current)); // no re-render while paused
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

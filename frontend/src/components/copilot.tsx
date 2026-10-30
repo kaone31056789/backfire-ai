@@ -2,6 +2,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUp, Loader2, Sparkles, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { api } from "@/lib/api";
 import { cn } from "@/lib/format";
@@ -41,7 +42,13 @@ export function Copilot({ invId, title }: { invId: string; title: string }) {
     }
   }
 
-  return (
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
+  // rendered on <body>: the page transition wrapper creates its own stacking context, which would
+  // otherwise keep the panel underneath the floating top navigation
+  return createPortal(
     <>
       <motion.button
         onClick={() => setOpen(true)}
@@ -59,9 +66,9 @@ export function Copilot({ invId, title }: { invId: string; title: string }) {
       <AnimatePresence>
         {open && (
           <>
-            <motion.div className="pe-auto fixed inset-0 z-[60] bg-black/40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setOpen(false)} />
+            <motion.div className="pe-auto fixed inset-0 z-[80] bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setOpen(false)} />
             <motion.aside
-              className="hud pe-auto fixed bottom-4 right-4 top-4 z-[61] flex w-[min(440px,calc(100vw-2rem))] flex-col overflow-hidden rounded-[28px]"
+              className="hud pe-auto fixed bottom-4 right-4 top-4 z-[81] flex w-[min(440px,calc(100vw-2rem))] flex-col overflow-hidden rounded-[28px]"
               initial={{ x: 480, opacity: 0.6 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 480, opacity: 0 }}
@@ -112,6 +119,7 @@ export function Copilot({ invId, title }: { invId: string; title: string }) {
           </>
         )}
       </AnimatePresence>
-    </>
+    </>,
+    document.body,
   );
 }
